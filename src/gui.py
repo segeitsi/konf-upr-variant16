@@ -1,4 +1,4 @@
-"""Графический REPL для первого этапа практической работы."""
+"""Графический REPL для первого этапа"""
 
 import tkinter as tk
 from tkinter import ttk

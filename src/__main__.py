@@ -1,4 +1,3 @@
-"""Запуск приложения командой python3 -m src."""
 
 from .gui import main
 
