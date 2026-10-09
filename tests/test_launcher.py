@@ -37,5 +37,30 @@ class LauncherTests(unittest.TestCase):
         self.assertIn("--unknown", result.stderr)
 
 
+class DirectLauncherTests(unittest.TestCase):
+    """Проверить прямой запуск файла, как через кнопку в редакторе."""
+
+    def run_entry(self, *arguments):
+        """Запустить точку входа из другой рабочей директории."""
+        entry = Path(__file__).resolve().parents[1] / "src" / "__main__.py"
+        with tempfile.TemporaryDirectory() as directory:
+            return subprocess.run(
+                [sys.executable, "-B", str(entry), *arguments],
+                cwd=directory, capture_output=True, text=True,
+            )
+
+    def test_help(self):
+        """Прямой запуск файла находит пакет и показывает справку."""
+        result = self.run_entry("--help")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--startup", result.stdout)
+
+    def test_invalid_parameter(self):
+        """При прямом запуске ошибка аргумента обрабатывается парсером."""
+        result = self.run_entry("--unknown")
+        self.assertEqual(result.returncode, 2)
+        self.assertNotIn("ImportError", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
