@@ -1,0 +1,5 @@
+ls
+ls "Мои документы"
+cd docs
+ls
+exit
