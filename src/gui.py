@@ -1,21 +1,23 @@
-"""Графический REPL для первого этапа"""
+"""Графический REPL"""
 
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
+from .config import Config
 from .shell import CommandError, execute_command
-
-VFS_NAME = "MyVFS"
+from .startup import run_startup
 
 
 class ShellWindow:
     """Окно с историей диалога и полем ввода команд."""
 
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: tk.Tk, config: Config) -> None:
         """Создать интерфейс и привязать Enter к выполнению команды."""
         self.root = root
-        root.title(f"Эмулятор оболочки — {VFS_NAME}")
+        self.config = config
+        self.prompt = f"{config.vfs_name}:/$"
+        root.title(f"Эмулятор оболочки — {config.vfs_name}")
         root.geometry("820x520")
         root.minsize(540, 320)
         frame = ttk.Frame(root, padding=12)
@@ -23,12 +25,15 @@ class ShellWindow:
         self._create_output(frame)
         self._create_input(frame)
         self.write(
-            "Эмулятор оболочки · вариант 16 · этап 1\n"
+            "Эмулятор оболочки · вариант 16 · этап 2\n"
             "Команды: ls [пути…], cd [путь], exit.\n"
             "ls и cd пока показывают только имя и аргументы.\n"
             'Путь с пробелами: cd "Мои документы"\n'
         )
+        self.write(config.describe())
         self.entry.focus_set()
+        if config.startup_path is not None:
+            root.after(0, self.run_startup)
 
     def _create_output(self, parent: ttk.Frame) -> None:
         """Создать область вывода с прокруткой и цветом для ошибок."""
@@ -45,7 +50,7 @@ class ShellWindow:
         """Создать поле ввода, приглашение и кнопку выполнения."""
         row = ttk.Frame(parent)
         row.pack(fill="x")
-        ttk.Label(row, text=f"{VFS_NAME}:/$").pack(side="left")
+        ttk.Label(row, text=self.prompt).pack(side="left")
         self.entry = ttk.Entry(row, font="TkFixedFont")
         self.entry.pack(side="left", fill="x", expand=True, padx=8)
         self.entry.bind("<Return>", self.submit)
@@ -66,7 +71,7 @@ class ShellWindow:
         self.entry.delete(0, "end")
         if not line.strip():
             return "break"
-        self.write(f"{VFS_NAME}:/$ {line}", "prompt")
+        self.write(f"{self.prompt} {line}", "prompt")
         try:
             result = execute_command(line)
         except CommandError as error:
@@ -80,9 +85,21 @@ class ShellWindow:
         self.entry.focus_set()
         return "break"
 
+    def run_startup(self) -> None:
+        """Выполнить скрипт и продолжить интерактивный ввод."""
+        if self.config.startup_path is None:
+            return
+        result = run_startup(
+            self.config.startup_path, self.write, self.prompt,
+        )
+        if result.should_exit:
+            self.root.destroy()
+        else:
+            self.entry.focus_set()
 
-def main() -> None:
+
+def main(config: Config) -> None:
     """Запустить графический цикл обработки команд."""
     root = tk.Tk()
-    ShellWindow(root)
+    ShellWindow(root, config)
     root.mainloop()
