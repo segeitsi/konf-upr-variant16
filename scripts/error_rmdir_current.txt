@@ -1,0 +1,4 @@
+ls
+cd docs/empty
+rmdir .
+not-executed-after-error

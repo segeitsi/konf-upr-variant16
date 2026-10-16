@@ -1,0 +1,3 @@
+ls
+ls absent
+not-executed-after-error

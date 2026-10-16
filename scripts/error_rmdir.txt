@@ -1,0 +1,3 @@
+ls
+rmdir docs
+not-executed-after-error

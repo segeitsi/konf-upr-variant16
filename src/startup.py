@@ -1,0 +1,46 @@
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+
+from .shell import CommandError, execute_command
+
+WriteOutput = Callable[[str, str], None]
+
+
+@dataclass(frozen=True)
+class StartupResult:
+    failed: bool = False
+    should_exit: bool = False
+
+
+def run_startup(
+    path: Path, write: WriteOutput, prompt, execute=execute_command,
+) -> StartupResult:
+    try:
+        lines = path.read_text(encoding="utf-8-sig").splitlines()
+    except (OSError, UnicodeError) as error:
+        write(f"Ошибка чтения стартового скрипта {path}: {error}", "error")
+        return StartupResult(failed=True)
+    write(f"Стартовый скрипт: {path}", "")
+    for number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        current_prompt = prompt
+        if callable(prompt):
+            current_prompt = prompt()
+        write(f"{current_prompt} {line}", "prompt")
+        try:
+            result = execute(line)
+        except CommandError as error:
+            write(
+                f"Ошибка в скрипте {path}, строка {number}: {error}\n"
+                "Выполнение скрипта остановлено.",
+                "error",
+            )
+            return StartupResult(failed=True)
+        if result.output:
+            write(result.output, "")
+        if result.should_exit:
+            return StartupResult(should_exit=True)
+    write("Стартовый скрипт завершён.", "")
+    return StartupResult()

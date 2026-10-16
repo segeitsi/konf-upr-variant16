@@ -1,0 +1,3 @@
+ls
+rmdir absent
+not-executed-after-error

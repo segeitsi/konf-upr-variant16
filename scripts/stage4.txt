@@ -1,0 +1,24 @@
+ls
+ls -a
+ls docs "Мои документы"
+ls docs/lines.txt
+ls docs/empty
+cd "Мои документы"
+ls
+cd /
+tail docs/lines.txt
+tail -n 3 docs/lines.txt
+tail -n3 docs/lines.txt
+tail -n -3 docs/lines.txt
+tail -n +13 docs/lines.txt
+tail -n 0 docs/lines.txt
+tail -n 100 docs/lines.txt
+tail -n 1 docs/lines.txt docs/deep/level3/note.txt
+cal
+cal 2 2024
+cal 2026
+cd docs/deep/level3
+ls
+cd ../../..
+cd docs
+cd

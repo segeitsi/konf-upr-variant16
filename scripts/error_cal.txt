@@ -1,0 +1,3 @@
+ls
+cal 13 2026
+not-executed-after-error

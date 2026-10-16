@@ -1,0 +1,3 @@
+ls
+rmdir docs/lines.txt
+not-executed-after-error

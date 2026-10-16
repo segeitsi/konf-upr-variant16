@@ -1,0 +1,3 @@
+ls
+rmdir /
+not-executed-after-error

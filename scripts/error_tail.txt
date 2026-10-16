@@ -1,0 +1,3 @@
+ls
+tail binary.bin
+not-executed-after-error

@@ -1,0 +1,3 @@
+ls
+cd docs/lines.txt
+not-executed-after-error
