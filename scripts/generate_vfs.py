@@ -27,4 +27,5 @@ def generate(directory: Path) -> None:
 
 
 if __name__ == "__main__":
-    generate(Path(sys.argv[1] if len(sys.argv) > 1 else "data"))
+    arguments = sys.argv[1:]
+    generate(Path(arguments[0] if arguments else "data"))

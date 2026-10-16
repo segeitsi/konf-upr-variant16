@@ -15,7 +15,6 @@ class VFSError(ValueError):
 
 @dataclass
 class Node:
-
     directory: bool
     content: str = ""
     modified: datetime = field(default_factory=datetime.now)
@@ -25,7 +24,6 @@ class Node:
 
 
 class VirtualFS:
-
     def __init__(self) -> None:
         self.nodes = {"/": Node(directory=True)}
 
@@ -34,69 +32,87 @@ class VirtualFS:
         fs = cls()
         try:
             with zipfile.ZipFile(path) as archive:
-                for info in archive.infolist():
-                    fs._load_entry(archive, info)
+                for entry in archive.infolist():
+                    fs._load_entry(archive, entry)
         except (OSError, zipfile.BadZipFile, RuntimeError) as error:
             raise VFSError(f"Ошибка загрузки VFS {path}: {error}") from error
         except (NotImplementedError, ValueError) as error:
             raise VFSError(f"Неверный формат VFS {path}: {error}") from error
         return fs
 
-    def _entry_path(self, info) -> str:
-        name = info.filename
+    def _entry_path(self, entry) -> str:
+        name = entry.filename
         parts = PurePosixPath(name).parts
         if not name or name.startswith("/") or ".." in parts:
             raise VFSError(f"Недопустимый путь в ZIP: {name!r}")
         if "\\" in name or "\x00" in name:
             raise VFSError(f"Недопустимый путь в ZIP: {name!r}")
-        if stat.S_ISLNK(info.external_attr >> ZIP_MODE_SHIFT):
+
+        mode = entry.external_attr >> ZIP_MODE_SHIFT
+        if stat.S_ISLNK(mode):
             raise VFSError(f"Символические ссылки не поддерживаются: {name}")
         return self.resolve(name)
 
-    def _load_entry(self, archive, info) -> None:
-        path = self._entry_path(info)
+    def _load_entry(self, archive, entry) -> None:
+        path = self._entry_path(entry)
         if path == "/":
             return
+
         parent = posixpath.dirname(path)
         self._ensure_directory(parent)
-        old = self.nodes.get(path)
-        if old and (not old.directory or not info.is_dir()):
-            raise VFSError(f"Повторяющийся путь в ZIP: {info.filename}")
-        payload = b"" if info.is_dir() else archive.read(info)
+        is_directory = entry.is_dir()
+        existing = self.nodes.get(path)
+        if existing is not None:
+            if not existing.directory or not is_directory:
+                raise VFSError(f"Повторяющийся путь в ZIP: {entry.filename}")
+
+        data = b""
+        if not is_directory:
+            data = archive.read(entry)
+        content = base64.b64encode(data).decode("ascii")
         self.nodes[path] = Node(
-            info.is_dir(), base64.b64encode(payload).decode("ascii"),
-            datetime(*info.date_time),
+            directory=is_directory,
+            content=content,
+            modified=datetime(*entry.date_time),
         )
 
     def _ensure_directory(self, path: str) -> None:
-        if path == "/":
-            return
-        existing = self.nodes.get(path)
-        if existing:
-            if not existing.directory:
-                raise VFSError(f"Файл использован как каталог: {path}")
-            return
-        self._ensure_directory(posixpath.dirname(path))
-        self.nodes[path] = Node(directory=True)
+        missing = []
+        current = path
+        while current not in self.nodes:
+            missing.append(current)
+            current = posixpath.dirname(current)
+
+        if not self.nodes[current].directory:
+            raise VFSError(f"Файл использован как каталог: {current}")
+        for directory in reversed(missing):
+            self.nodes[directory] = Node(directory=True)
 
     def resolve(self, path: str, cwd: str = "/") -> str:
         if not path:
             raise VFSError("Пустой путь.")
-        return "/" + posixpath.normpath(posixpath.join(cwd, path)).lstrip("/")
+        full_path = posixpath.join(cwd, path)
+        normalized = posixpath.normpath(full_path)
+        return "/" + normalized.lstrip("/")
 
     def get(self, path: str) -> Node:
-        try:
-            return self.nodes[path]
-        except KeyError as error:
-            raise VFSError(f"Путь не найден: {path}") from error
+        node = self.nodes.get(path)
+        if node is None:
+            raise VFSError(f"Путь не найден: {path}")
+        return node
 
     def children(self, path: str) -> list[str]:
         if not self.get(path).directory:
             raise VFSError(f"Не каталог: {path}")
-        return sorted(
-            posixpath.basename(name) for name in self.nodes
-            if name != "/" and posixpath.dirname(name) == path
-        )
+
+        names = []
+        for child_path in self.nodes:
+            if child_path == "/":
+                continue
+            parent = posixpath.dirname(child_path)
+            if parent == path:
+                names.append(posixpath.basename(child_path))
+        return sorted(names)
 
     def text(self, path: str) -> str:
         node = self.get(path)

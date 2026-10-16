@@ -9,7 +9,6 @@ WriteOutput = Callable[[str, str], None]
 
 @dataclass(frozen=True)
 class StartupResult:
-
     failed: bool = False
     should_exit: bool = False
 

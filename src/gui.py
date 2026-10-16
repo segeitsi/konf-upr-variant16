@@ -9,7 +9,6 @@ from .vfs import VirtualFS, VFSError
 
 
 class ShellWindow:
-
     def __init__(self, root: tk.Tk, config: Config) -> None:
         self.root = root
         self.config = config
@@ -35,8 +34,9 @@ class ShellWindow:
 
     def load_vfs(self) -> VirtualFS | None:
         try:
-            fs = (VirtualFS.load(self.config.vfs_path)
-                  if self.config.vfs_path else VirtualFS())
+            fs = VirtualFS()
+            if self.config.vfs_path is not None:
+                fs = VirtualFS.load(self.config.vfs_path)
         except VFSError as error:
             self.write(str(error), "error")
             self.entry.configure(state="disabled")
