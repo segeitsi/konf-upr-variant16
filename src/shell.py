@@ -1,24 +1,20 @@
-"""Разбор и выполнение команд"""
-
 import json
 import shlex
 from dataclasses import dataclass
 
 
 class CommandError(ValueError):
-    """Ошибка ввода команды, которую следует показать пользователю."""
+    pass
 
 
 @dataclass(frozen=True)
 class CommandResult:
-    """Текст результата и признак завершения приложения."""
 
     output: str = ""
     should_exit: bool = False
 
 
 def parse_command(line: str) -> list[str]:
-    """Разобрать строку, сохранив аргументы в кавычках целиком."""
     try:
         return shlex.split(line, comments=False, posix=True)
     except ValueError as error:
@@ -29,7 +25,6 @@ def parse_command(line: str) -> list[str]:
 
 
 def execute_command(line: str) -> CommandResult:
-    """Выполнить команду этапа 1; пустая строка ничего не делает."""
     tokens = parse_command(line)
     if not tokens:
         return CommandResult()
