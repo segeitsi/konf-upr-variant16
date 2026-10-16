@@ -1,5 +1,3 @@
-"""Графический REPL"""
-
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
@@ -11,10 +9,8 @@ from .vfs import VirtualFS, VFSError
 
 
 class ShellWindow:
-    """Окно с историей диалога и полем ввода команд."""
 
     def __init__(self, root: tk.Tk, config: Config) -> None:
-        """Создать интерфейс и привязать Enter к выполнению команды."""
         self.root = root
         self.config = config
         self.prompt = f"{config.vfs_name}:/$"
@@ -38,7 +34,6 @@ class ShellWindow:
             root.after(0, self.run_startup)
 
     def load_vfs(self) -> VirtualFS | None:
-        """Загрузить архив или показать ошибку, отключив выполнение команд."""
         try:
             fs = (VirtualFS.load(self.config.vfs_path)
                   if self.config.vfs_path else VirtualFS())
@@ -50,7 +45,6 @@ class ShellWindow:
         return fs
 
     def _create_output(self, parent: ttk.Frame) -> None:
-        """Создать область вывода с прокруткой и цветом для ошибок."""
         self.output = ScrolledText(
             parent, wrap="word", state="disabled",
             font="TkFixedFont", background="#18212b",
@@ -61,7 +55,6 @@ class ShellWindow:
         self.output.tag_configure("error", foreground="#ff9c9c")
 
     def _create_input(self, parent: ttk.Frame) -> None:
-        """Создать поле ввода, приглашение и кнопку выполнения."""
         row = ttk.Frame(parent)
         row.pack(fill="x")
         ttk.Label(row, text=self.prompt).pack(side="left")
@@ -73,14 +66,12 @@ class ShellWindow:
         ).pack(side="right")
 
     def write(self, text: str, tag: str = "") -> None:
-        """Добавить текст в историю и прокрутить её до конца."""
         self.output.configure(state="normal")
         self.output.insert("end", text + "\n", tag)
         self.output.configure(state="disabled")
         self.output.see("end")
 
     def submit(self, event: tk.Event | None = None) -> str:
-        """Обработать ввод; ошибка не прерывает следующий ввод."""
         if self.vfs is None:
             return "break"
         line = self.entry.get()
@@ -102,7 +93,6 @@ class ShellWindow:
         return "break"
 
     def run_startup(self) -> None:
-        """Выполнить скрипт и продолжить интерактивный ввод."""
         if self.config.startup_path is None:
             return
         result = run_startup(
@@ -115,7 +105,6 @@ class ShellWindow:
 
 
 def main(config: Config) -> None:
-    """Запустить графический цикл обработки команд."""
     root = tk.Tk()
     ShellWindow(root, config)
     root.mainloop()

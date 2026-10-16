@@ -1,5 +1,3 @@
-"""Выполнение стартового скрипта с остановкой на первой ошибке."""
-
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +9,6 @@ WriteOutput = Callable[[str, str], None]
 
 @dataclass(frozen=True)
 class StartupResult:
-    """Признаки ошибки скрипта и завершения эмулятора."""
 
     failed: bool = False
     should_exit: bool = False
@@ -20,7 +17,6 @@ class StartupResult:
 def run_startup(
     path: Path, write: WriteOutput, prompt: str,
 ) -> StartupResult:
-    """Показать диалог скрипта и остановиться на первой ошибке."""
     try:
         lines = path.read_text(encoding="utf-8-sig").splitlines()
     except (OSError, UnicodeError) as error:

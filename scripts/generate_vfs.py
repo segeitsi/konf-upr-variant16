@@ -1,12 +1,9 @@
-"""Создание тестовых ZIP; архивы не хранятся в Git."""
-
 from pathlib import Path
 import sys
 import zipfile
 
 
 def generate(directory: Path) -> None:
-    """Создать минимальный, обычный и вложенный наборы VFS."""
     directory.mkdir(parents=True, exist_ok=True)
     samples = {
         "minimal.zip": {},
