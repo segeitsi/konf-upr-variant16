@@ -1,6 +1,7 @@
 import calendar
 from datetime import date
 import posixpath
+import stat
 
 from .shell import CommandError, CommandResult, parse_command
 from .vfs import VirtualFS, VFSError
@@ -12,6 +13,8 @@ YEAR_ONLY_ARGS = 1
 MAX_CAL_ARGS = 2
 MIN_MONTH, MAX_MONTH = 1, 12
 MIN_YEAR, MAX_YEAR = 1, 9999
+LS_FLAGS = ("-a", "-l", "-al", "-la")
+LS_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 def split_arguments(arguments, allowed_flags=()):
@@ -70,39 +73,57 @@ class Shell:
         return CommandResult(output)
 
     def ls(self, arguments) -> str:
-        flags, paths = split_arguments(arguments, allowed_flags=("-a",))
+        flags, paths = split_arguments(arguments, allowed_flags=LS_FLAGS)
         if not paths:
             paths = ["."]
 
-        show_hidden = "-a" in flags
+        show_hidden = False
+        detailed = False
+        for flag in flags:
+            if "a" in flag:
+                show_hidden = True
+            if "l" in flag:
+                detailed = True
         several_paths = len(paths) > SINGLE_PATH_COUNT
         output = []
         for name in paths:
             path = self.fs.resolve(name, self.cwd)
-            listing = self._list_path(path, show_hidden)
+            listing = self._list_path(path, show_hidden, detailed)
             if several_paths:
                 listing = f"{name}:\n{listing}"
             output.append(listing)
         return "\n\n".join(output)
 
-    def _list_path(self, path, show_hidden) -> str:
+    def _list_path(self, path, show_hidden, detailed=False) -> str:
         node = self.fs.get(path)
         if not node.directory:
-            return posixpath.basename(path)
+            return self._format_entry(path, posixpath.basename(path), detailed)
 
-        names = []
+        names = self.fs.children(path)
         if show_hidden:
-            names.extend([".", ".."])
+            names = [".", ".."] + names
 
-        for name in self.fs.children(path):
+        output = []
+        for name in names:
             if name.startswith(".") and not show_hidden:
                 continue
             child_path = self.fs.resolve(name, path)
-            child = self.fs.get(child_path)
-            if child.directory:
-                name += "/"
-            names.append(name)
-        return "\n".join(names)
+            output.append(self._format_entry(child_path, name, detailed))
+        return "\n".join(output)
+
+    def _format_entry(self, path, name, detailed) -> str:
+        node = self.fs.get(path)
+        if node.directory and name not in {".", ".."}:
+            name += "/"
+        if not detailed:
+            return name
+
+        size = 0
+        if not node.directory:
+            size = len(node.data())
+        permissions = stat.filemode(node.mode)
+        modified = node.modified.strftime(LS_TIME_FORMAT)
+        return f"{permissions} {size:>8} {modified} {name}"
 
     def cd(self, arguments) -> str:
         _, paths = split_arguments(arguments)

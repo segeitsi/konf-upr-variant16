@@ -44,6 +44,10 @@ class ScenarioTests(unittest.TestCase):
                       self.dialogue)
         self.assertIn(('demo:/Мои документы$ ls', 'prompt'), self.dialogue)
         self.assertIn(('line 13\nline 14\nline 15', ''), self.dialogue)
+        self.assertIn(('demo:/$ ls -l docs/lines.txt', 'prompt'),
+                      self.dialogue)
+        listing = self.shell.execute('ls -l docs/lines.txt').output
+        self.assertIn((listing, ''), self.dialogue)
 
     def test_stage4_errors_stop_script(self):
         for name in ['ls', 'cd', 'tail', 'cal']:

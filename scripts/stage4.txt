@@ -1,5 +1,8 @@
 ls
 ls -a
+ls -l
+ls -la docs
+ls -l docs/lines.txt
 ls docs "Мои документы"
 ls docs/lines.txt
 ls docs/empty
