@@ -8,7 +8,6 @@ class CommandError(ValueError):
 
 @dataclass(frozen=True)
 class CommandResult:
-
     output: str = ""
     should_exit: bool = False
 
