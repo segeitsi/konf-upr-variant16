@@ -1,7 +1,6 @@
 import calendar
 from datetime import date
 import posixpath
-import re
 
 from .shell import CommandError, CommandResult, parse_command
 from .vfs import VirtualFS, VFSError
@@ -132,19 +131,25 @@ class Shell:
                     raise VFSError("После -n требуется число строк.")
                 count_text = arguments.pop(0)
 
-        message = "Количество строк tail должно быть целым."
-        if not re.fullmatch(r"[+-]?[0-9]+", count_text):
-            raise VFSError(message)
-        try:
-            count = abs(int(count_text))
-        except ValueError as error:
-            raise VFSError(message) from error
-
+        count = self._parse_tail_count(count_text)
         _, paths = split_arguments(arguments)
         if not paths:
             raise VFSError("Использование: tail [-n N] файл [файлы…].")
         from_start = count_text.startswith("+")
         return count, from_start, paths
+
+    def _parse_tail_count(self, text) -> int:
+        digits = text
+        if text.startswith(("+", "-")):
+            digits = text[1:]
+
+        message = "Количество строк tail должно быть целым."
+        if not digits.isascii() or not digits.isdecimal():
+            raise VFSError(message)
+        try:
+            return abs(int(text))
+        except ValueError as error:
+            raise VFSError(message) from error
 
     def tail(self, arguments) -> str:
         count, from_start, paths = self._parse_tail_args(arguments)
