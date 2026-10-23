@@ -24,7 +24,7 @@ class ShellWindow:
         self._create_input(frame)
         self.write(
             "Эмулятор оболочки · вариант 16 · этап 5\n"
-            "Команды: ls, cd, tail, cal, touch, rmdir, exit.\n"
+            "Команды: ls [-a] [-l], cd, tail, cal, touch, rmdir, exit.\n"
             'Путь с пробелами: cd "Мои документы"\n'
         )
         self.write(config.describe())
