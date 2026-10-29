@@ -4,6 +4,7 @@ from .config import parse_config
 from .errors import AppError
 from .graph import build_graph, describe_graph
 from .order import dependency_order
+from .render import to_ascii, to_d2
 from .repository import PyPIRepository
 from .test_repository import TestRepository
 
@@ -35,8 +36,13 @@ def run(config):
         order = dependency_order(graph)
         print('Порядок загрузки:')
         print(' -> '.join(graph.label(name) for name in order))
-    else:
+    elif config.stage == GRAPH_STAGE:
         print(describe_graph(graph))
+    else:
+        print(to_d2(graph))
+        if config.ascii_tree:
+            print('\nASCII:')
+            print(to_ascii(graph))
     return 0
 
 
