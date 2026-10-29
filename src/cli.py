@@ -3,10 +3,11 @@ import sys
 from .config import parse_config
 from .errors import AppError
 from .graph import build_graph, describe_graph
+from .order import dependency_order
 from .repository import PyPIRepository
 from .test_repository import TestRepository
 
-CONFIG_STAGE, DIRECT_STAGE, GRAPH_STAGE = 1, 2, 3
+CONFIG_STAGE, DIRECT_STAGE, GRAPH_STAGE, ORDER_STAGE = 1, 2, 3, 4
 
 
 def main(arguments=None):
@@ -30,7 +31,12 @@ def run(config):
         print_direct(repository, config)
         return 0
     graph = build_graph(repository, config.package, config.version, config.test)
-    print(describe_graph(graph))
+    if config.stage == ORDER_STAGE:
+        order = dependency_order(graph)
+        print('Порядок загрузки:')
+        print(' -> '.join(graph.label(name) for name in order))
+    else:
+        print(describe_graph(graph))
     return 0
 
 
