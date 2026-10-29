@@ -40,6 +40,10 @@ def validate_repository(value, test):
         except (OSError, UnicodeError) as error:
             raise AppError(f"Нельзя прочитать репозиторий: {error}") from error
         return
+    validate_url(value)
+
+
+def validate_url(value):
     url = urlsplit(value)
     if url.scheme not in {"http", "https"} or not url.hostname:
         raise AppError("Репозиторий: нужен URL http:// или https://.")

@@ -2,9 +2,11 @@ import sys
 
 from .config import parse_config
 from .errors import AppError
+from .graph import build_graph, describe_graph
 from .repository import PyPIRepository
+from .test_repository import TestRepository
 
-CONFIG_STAGE, DIRECT_STAGE = 1, 2
+CONFIG_STAGE, DIRECT_STAGE, GRAPH_STAGE = 1, 2, 3
 
 
 def main(arguments=None):
@@ -21,12 +23,21 @@ def main(arguments=None):
 
 def run(config):
     if config.test:
-        raise AppError("Тестовый граф доступен начиная с этапа 3.")
-    repository = PyPIRepository(config.repository)
+        repository = TestRepository(config.repository, config.version)
+    else:
+        repository = PyPIRepository(config.repository)
+    if config.stage == DIRECT_STAGE:
+        print_direct(repository, config)
+        return 0
+    graph = build_graph(repository, config.package, config.version, config.test)
+    print(describe_graph(graph))
+    return 0
+
+
+def print_direct(repository, config):
     dependencies = repository.dependencies(config.package, config.version)
     print(f"Прямые зависимости {config.package}=={config.version}:")
     for requirement in dependencies:
         print(requirement)
     if not dependencies:
         print('(нет зависимостей)')
-    return 0
