@@ -22,6 +22,7 @@ SPEC_RE = re.compile(r"(===|~=|==|!=|<=|>=|<|>)\s*(\S+)")
 MIN_COMPATIBLE_PARTS = 2
 INFINITY = float('inf')
 NO_POST = -1
+RELEASE_KEY_PARTS = 2
 
 
 @total_ordering
@@ -58,11 +59,14 @@ class Version:
         dev = INFINITY
         if self.dev:
             dev = int(fields['dev_number'] or 0)
-        local = ()
-        if self.local:
-            local = tuple(self._local_part(part) for part in
-                          re.split(r'[-_.]', self.local.lower()))
-        return self.epoch, tuple(release), pre, self.post, dev, local
+        return (self.epoch, tuple(release), pre, self.post, dev,
+                self._local_key())
+
+    def _local_key(self):
+        if not self.local:
+            return ()
+        return tuple(self._local_part(part) for part in
+                     re.split(r'[-_.]', self.local.lower()))
 
     def _local_part(self, part):
         if part.isdigit():
@@ -134,7 +138,8 @@ def _prefix_matches(current, bound):
 
 
 def _excluded_boundary(current, bound, operation):
-    same_release = current.key[:2] == bound.key[:2]
+    same_release = (current.key[:RELEASE_KEY_PARTS]
+                    == bound.key[:RELEASE_KEY_PARTS])
     if not same_release:
         return False
     if operation == '<' and not bound.prerelease:
