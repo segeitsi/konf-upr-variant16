@@ -1,2 +1,0 @@
-class AppError(ValueError):
-    pass

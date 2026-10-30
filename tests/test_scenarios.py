@@ -1,8 +1,6 @@
 from pathlib import Path
-from datetime import datetime
 import tempfile
 import unittest
-from unittest.mock import patch
 
 from scripts.generate_vfs import generate
 from src.commands import Shell
@@ -85,29 +83,6 @@ class ScenarioTests(unittest.TestCase):
         self.assertFalse(result.should_exit)
         self.assertEqual(self.shell.cwd, '/')
         self.assertIn('/new.txt', self.shell.fs.nodes)
-
-    def test_stage5_dialogue_shows_changes(self):
-        shell = Shell(VirtualFS.load(self.root / 'nested.zip'))
-        dialogue = []
-        with patch('src.vfs.datetime') as clock:
-            clock.now.return_value = datetime(2027, 1, 2, 3, 4, 5, 123456)
-            result = run_startup(
-                SCRIPTS / 'stage5.txt',
-                lambda text, tag: dialogue.append(text), 'demo:/$',
-                execute=shell.execute,
-            )
-        self.assertFalse(result.failed)
-        listings = [text for text in dialogue
-                    if '\n' not in text and text.endswith(' lines.txt')]
-        self.assertEqual(len(listings), 2)
-        self.assertNotEqual(listings[0], listings[1])
-        self.assertIn('2027-01-02 03:04:05.123456', listings[1])
-        self.assertEqual(listings[0].split()[:2], listings[1].split()[:2])
-        positions = [index for index, text in enumerate(dialogue)
-                     if text == 'demo:/$ ls -l docs']
-        self.assertEqual(len(positions), 2)
-        self.assertIn('empty/', dialogue[positions[0] + 1])
-        self.assertNotIn('empty/', dialogue[positions[1] + 1])
 
 
 if __name__ == '__main__':

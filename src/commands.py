@@ -1,7 +1,7 @@
 import calendar
 from datetime import date
 import posixpath
-import stat
+import re
 
 from .shell import CommandError, CommandResult, parse_command
 from .vfs import VirtualFS, VFSError
@@ -13,8 +13,6 @@ YEAR_ONLY_ARGS = 1
 MAX_CAL_ARGS = 2
 MIN_MONTH, MAX_MONTH = 1, 12
 MIN_YEAR, MAX_YEAR = 1, 9999
-LS_FLAGS = ("-a", "-l", "-al", "-la")
-LS_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 def split_arguments(arguments, allowed_flags=()):
@@ -75,57 +73,39 @@ class Shell:
         return CommandResult(output)
 
     def ls(self, arguments) -> str:
-        flags, paths = split_arguments(arguments, allowed_flags=LS_FLAGS)
+        flags, paths = split_arguments(arguments, allowed_flags=("-a",))
         if not paths:
             paths = ["."]
 
-        show_hidden = False
-        detailed = False
-        for flag in flags:
-            if "a" in flag:
-                show_hidden = True
-            if "l" in flag:
-                detailed = True
+        show_hidden = "-a" in flags
         several_paths = len(paths) > SINGLE_PATH_COUNT
         output = []
         for name in paths:
             path = self.fs.resolve(name, self.cwd)
-            listing = self._list_path(path, show_hidden, detailed)
+            listing = self._list_path(path, show_hidden)
             if several_paths:
                 listing = f"{name}:\n{listing}"
             output.append(listing)
         return "\n\n".join(output)
 
-    def _list_path(self, path, show_hidden, detailed=False) -> str:
+    def _list_path(self, path, show_hidden) -> str:
         node = self.fs.get(path)
         if not node.directory:
-            return self._format_entry(path, posixpath.basename(path), detailed)
+            return posixpath.basename(path)
 
-        names = self.fs.children(path)
+        names = []
         if show_hidden:
-            names = [".", ".."] + names
+            names.extend([".", ".."])
 
-        output = []
-        for name in names:
+        for name in self.fs.children(path):
             if name.startswith(".") and not show_hidden:
                 continue
             child_path = self.fs.resolve(name, path)
-            output.append(self._format_entry(child_path, name, detailed))
-        return "\n".join(output)
-
-    def _format_entry(self, path, name, detailed) -> str:
-        node = self.fs.get(path)
-        if node.directory and name not in {".", ".."}:
-            name += "/"
-        if not detailed:
-            return name
-
-        size = 0
-        if not node.directory:
-            size = len(node.data())
-        permissions = stat.filemode(node.mode)
-        modified = node.modified.strftime(LS_TIME_FORMAT)
-        return f"{permissions} {size:>8} {modified} {name}"
+            child = self.fs.get(child_path)
+            if child.directory:
+                name += "/"
+            names.append(name)
+        return "\n".join(names)
 
     def cd(self, arguments) -> str:
         _, paths = split_arguments(arguments)
@@ -152,25 +132,19 @@ class Shell:
                     raise VFSError("После -n требуется число строк.")
                 count_text = arguments.pop(0)
 
-        count = self._parse_tail_count(count_text)
+        message = "Количество строк tail должно быть целым."
+        if not re.fullmatch(r"[+-]?[0-9]+", count_text):
+            raise VFSError(message)
+        try:
+            count = abs(int(count_text))
+        except ValueError as error:
+            raise VFSError(message) from error
+
         _, paths = split_arguments(arguments)
         if not paths:
             raise VFSError("Использование: tail [-n N] файл [файлы…].")
         from_start = count_text.startswith("+")
         return count, from_start, paths
-
-    def _parse_tail_count(self, text) -> int:
-        digits = text
-        if text.startswith(("+", "-")):
-            digits = text[1:]
-
-        message = "Количество строк tail должно быть целым."
-        if not digits.isascii() or not digits.isdecimal():
-            raise VFSError(message)
-        try:
-            return abs(int(text))
-        except ValueError as error:
-            raise VFSError(message) from error
 
     def tail(self, arguments) -> str:
         count, from_start, paths = self._parse_tail_args(arguments)

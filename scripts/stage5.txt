@@ -1,0 +1,15 @@
+touch new.txt "файл с пробелами.txt"
+ls
+tail new.txt
+touch docs/lines.txt binary.bin "Мои документы" /
+tail -n 1 docs/lines.txt
+cd docs/deep/level3
+touch ./local.txt
+ls
+tail local.txt
+cd ../../..
+touch -- -file
+ls -- -file
+rmdir docs/empty "Мои документы"
+ls docs
+ls
