@@ -7,6 +7,8 @@ import stat
 import zipfile
 
 ZIP_MODE_SHIFT = 16
+DEFAULT_FILE_MODE = stat.S_IFREG | 0o644
+DEFAULT_DIRECTORY_MODE = stat.S_IFDIR | 0o755
 
 
 class VFSError(ValueError):
@@ -18,6 +20,13 @@ class Node:
     directory: bool
     content: str = ""
     modified: datetime = field(default_factory=datetime.now)
+    mode: int = 0
+
+    def __post_init__(self) -> None:
+        if not self.mode:
+            self.mode = DEFAULT_FILE_MODE
+            if self.directory:
+                self.mode = DEFAULT_DIRECTORY_MODE
 
     def data(self) -> bytes:
         return base64.b64decode(self.content)
@@ -70,10 +79,17 @@ class VirtualFS:
         if not is_directory:
             data = archive.read(entry)
         content = base64.b64encode(data).decode("ascii")
+        mode = entry.external_attr >> ZIP_MODE_SHIFT
+        if mode and not stat.S_IFMT(mode):
+            if is_directory:
+                mode |= stat.S_IFDIR
+            else:
+                mode |= stat.S_IFREG
         self.nodes[path] = Node(
             directory=is_directory,
             content=content,
             modified=datetime(*entry.date_time),
+            mode=mode,
         )
 
     def _ensure_directory(self, path: str) -> None:

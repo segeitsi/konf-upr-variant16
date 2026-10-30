@@ -22,18 +22,23 @@ ls
 cd ../../..
 cd docs
 cd
-touch new.txt "файл с пробелами.txt"
-ls
-tail new.txt
-touch docs/lines.txt binary.bin "Мои документы" /
+ls -l docs/lines.txt
+touch docs/lines.txt
+ls -l docs/lines.txt
 tail -n 1 docs/lines.txt
+touch new.txt "файл с пробелами.txt"
+ls -l new.txt "файл с пробелами.txt"
+tail new.txt
+touch binary.bin "Мои документы" /
+ls -l binary.bin
 cd docs/deep/level3
 touch ./local.txt
-ls
+ls -la
 tail local.txt
 cd ../../..
 touch -- -file
-ls -- -file
+ls -l -- -file
+ls -l docs
 rmdir docs/empty "Мои документы"
-ls docs
-ls
+ls -l docs
+ls -la

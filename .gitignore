@@ -1,7 +1,12 @@
 __pycache__/
 *.py[cod]
 .venv/
-.DS_Store
-.idea/
 .vscode/
-data/*.zip
+.idea/
+.DS_Store
+*.pdf
+*.zip
+*.whl
+*.png
+*.svg
+output/

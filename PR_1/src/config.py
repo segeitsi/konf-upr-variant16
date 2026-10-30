@@ -5,13 +5,14 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Config:
-
     vfs_path: Path | None = None
     startup_path: Path | None = None
 
     @property
     def vfs_name(self) -> str:
-        return self.vfs_path.name if self.vfs_path else "MyVFS"
+        if self.vfs_path is None:
+            return "MyVFS"
+        return self.vfs_path.name
 
     def describe(self) -> str:
         return (
