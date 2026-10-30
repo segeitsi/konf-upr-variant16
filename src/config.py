@@ -9,7 +9,7 @@ from .versions import Version
 
 NAME_PATTERN = r"[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
 VERSION_PATTERN = r"[A-Za-z0-9][A-Za-z0-9.!+_-]*"
-FIRST_STAGE, LAST_STAGE = 1, 5
+FIRST_STAGE, LAST_STAGE = 1, 2
 
 
 @dataclass(frozen=True)
@@ -40,6 +40,12 @@ def validate_repository(value, test):
         except (OSError, UnicodeError) as error:
             raise AppError(f"Нельзя прочитать репозиторий: {error}") from error
         return
+    validate_url(value)
+
+
+def validate_url(value):
+    if any(character.isspace() for character in value):
+        raise AppError("URL репозитория не должен содержать пробелы.")
     url = urlsplit(value)
     if url.scheme not in {"http", "https"} or not url.hostname:
         raise AppError("Репозиторий: нужен URL http:// или https://.")
