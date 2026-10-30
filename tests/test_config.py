@@ -29,6 +29,7 @@ class ConfigTests(unittest.TestCase):
         cases = [('--package', '../x'), ('--version', 'bad version'),
                  ('--repository', 'ftp://host'), ('--stage', '6'),
                  ('--repository', 'https://host:bad'),
+                 ('--repository', 'https://bad host'),
                  ('--repository', 'https://user:pass@host'),
                  ('--test', 'true'), ('--ascii-tree', 'yes'),
                  ('--test', '--repository', '/missing/graph.json')]
